@@ -254,29 +254,3 @@ end)
 PF_2:Toggle("Max Volume [SELL]",function(bool) 
    _G.ItemVolumeCheck = bool
 end)
-
---AUTO--
-function repeatBuy(player)
-    if game.Players.LocalPlayer.UserId == player then
-        print("Beginning AutoBuy +++")
-        --put autobuy() functions with wait() inbetween
-    elseif player == 6969696969 then -- for different accounts you can have dif orders with elseifs
-        print("erm")
-    end
-end
-function repeatSell(player)
-    if game.Players.LocalPlayer.UserId == player then
-        print("Beginning AutoSell ^^^")
-        --put autosell() functions within here with wait() inbetween
-    elseif player == 6969696969 then -- for different accounts you can have dif orders with elseifs
-        print("erm")
-    end
-end
-_G.AutoMarket = true
-
-while task.wait(1) do
-    if _G.AutoMarket then
-        repeatBuy(game.Players.LocalPlayer.UserId)
-        repeatSell(game.Players.LocalPlayer.UserId)
-    end
-end
