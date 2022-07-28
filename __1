@@ -1,5 +1,4 @@
 --Auto Market
-
 local terminal = game:GetService("Workspace").Stations.SpaceStation.Modules.MarketExpanded.Terminal
 local buycheck = 0
 --FUNCTIONS
@@ -90,7 +89,8 @@ function profitmargin(item)
     local buy = itemdata.Offers.Buy
     local sell = itemdata.Offers.Sell
     local profit = sell - buy
-    local net = math.floor(profit / sell * 100).."%"
+    local profit2  = sell / buy
+    local net = math.floor((profit2 - 1) * 100).."%"
     print(net.." ["..math.floor(profit).." Credits]".." -- ["..item.."]")
     return net
 end
