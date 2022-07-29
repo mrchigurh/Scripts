@@ -46,7 +46,9 @@ function autobuy(item, desvolume, maxbuy)
             local FixedTitle_3 = string.gsub(FixedTitle_2, "Coilgun", "Coil")
             local FixedSMiner2 = string.gsub(v.Title.Text, "Precision Miner II", "PreciseMiner2")
             local FixedTitle_Final = FixedTitle_3
-            if FixedTitle_Final == item or FixedSMiner2 == item then
+            local FixedBP = string.gsub(FixedTitle_2, "blueprint", "")
+            local FixedBP2 = "Blueprint_"..FixedBP
+            if FixedTitle_Final == item or FixedSMiner2 == item or FixedBP2 == item then
                     if tonumber(FixedPrice) < buy then
                     --print("AutoCancel Success - Cancelling Order | ".. " ----- ".."["..item.."]")
                     qu:cprintf(119, 255, 8, "AutoCancel Success - Cancelling Order | ".. " ----- ".."["..item.."]")
