@@ -1,7 +1,7 @@
 --Auto Market
 local terminal = game:GetService("Workspace").Stations.SpaceStation.Modules.MarketExpanded.Terminal
 local buycheck = 0
-local LP = game.Players.LocalPlayer.Name
+local LP = game:GetService("Players").LocalPlayer
 --FUNCTIONS
 function Storage()
     local FinalCalc = {}
@@ -173,7 +173,7 @@ function autosell(item, desvolume, minsell)
     end
 end
 function GetItemVolume(item)
-    for i,v in pairs(game:GetService("Players").LP.PlayerGui.Market.Window.Storage.View.Items.Grid:GetChildren()) do
+    for i,v in pairs(LP.PlayerGui.Market.Window.Storage.View.Items.Grid:GetChildren()) do
         local FixedTitle_1 = string.gsub(v.Title.Text, " I", "1") and string.gsub(v.Title.Text, " II", "2") and string.gsub(v.Title.Text, " III", "3")
         local FixedTitle_2 = string.gsub(FixedTitle_1, " ", "") and string.gsub(FixedTitle_1, "-", "") and string.gsub(FixedTitle_1, "%s+", "")
         local FixedTitle_3 = string.gsub(FixedTitle_2, "Coilgun", "Coil")
