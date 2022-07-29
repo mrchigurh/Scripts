@@ -1,7 +1,7 @@
 --Auto Market
 local terminal = game:GetService("Workspace").Stations.SpaceStation.Modules.MarketExpanded.Terminal
 local buycheck = 0
-local LP = game.Players.LocalPlayer
+local LP = game.Players.LocalPlayer.Name
 --FUNCTIONS
 function Storage()
     local FinalCalc = {}
