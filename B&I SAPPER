@@ -1,0 +1,345 @@
+-- [[ UI ]] --
+_G.MainColor = Color3.fromRGB(0,0,0)
+_G.SecondaryColor = Color3.fromRGB(0,0,0)
+_G.TertiaryColor = Color3.fromRGB(15,15,15)
+_G.ArrowColor = Color3.fromRGB(175,0,0)
+_G.ToggleColor = Color3.fromRGB(255,0,0)
+_G.ButtonColor = Color3.fromRGB(175,0,0)
+_G.SliderColor = Color3.fromRGB(255,0,0)
+
+local library = loadstring(game:HttpGet(('https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/wall%20v3')))()
+
+local windowSapper = library:CreateWindow("B&I Sapper")
+local buildStructFd = windowSapper:CreateFolder("Build Structure")
+local mainFd = windowSapper:CreateFolder("Main")
+local templatesFd = windowSapper:CreateFolder("Templates")
+
+-- [[ VARIABLES ]] --
+
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local UIS = game:GetService('UserInputService')
+
+local constructRm = game:GetService("ReplicatedStorage").Requests.RequestDamage
+local requestRm = game:GetService("ReplicatedStorage").Requests.RequestConstruct
+local requestToolEquipFn = game:GetService("ReplicatedStorage").Requests.RequestToolEquip
+
+
+local buildItemsArray = {
+    'Barricade',
+    'Stakes',
+    'LargeSandBags',
+    'SmallSandBags',
+    'Gabion',
+    'LargeChevauxDeFrise',
+    'SmallChevauxDeFrise',
+    'Fence',
+    'Crate',
+    'LargeDirt',
+    'SmallDirt'
+}
+
+local shovelItemsArray = {
+    
+}
+
+-- [[ GLOBALS ]] --
+
+getgenv().Length = 15
+getgenv().Thickness = {
+    [1] = 0
+}
+getgenv().Inset = 5.7
+getgenv().BuildItem = 'Barricade'
+getgenv().AutoBuild = false
+getgenv().QuickBuild = false
+getgenv().HaltBuild = false
+getgenv().Offset = 5
+getgenv().SwitchToolGlobal = nil
+
+-- [[ CONNECTIONS ]] --
+
+getgenv().AutoBuildConnection = nil
+getgenv().QuickBuildConnection = nil
+
+-- [[ FUNCTIONS ]] --
+
+local function switchTool(desTool, getTool)
+    local prevtool
+    for _, ins in ipairs(game.Players.LocalPlayer.Character:GetChildren()) do
+        if ins:FindFirstChild('Handle') then
+             prevtool = ins
+             break
+        end
+    end
+    
+    if getTool == true then
+        return prevtool
+    end
+    
+    requestToolEquipFn:InvokeServer(tostring(prevtool), desTool)
+end
+
+SwitchToolGlobal = switchTool
+
+local function createThickness(amount)
+    local dict = {}
+    
+    for i = 1, amount do
+        dict[i] = Offset
+    end
+    
+    for i , v in ipairs(dict) do
+        print(i,v)
+    end
+    
+    
+    return dict
+end
+
+local function startBuild()
+    switchTool('Hammer')
+    local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+    
+    print(#Thickness)
+    
+    if BuildItem == 'LargeDirt' or BuildItem == 'SmallDirt' then
+        switchTool('Shovel')
+    end
+    
+    for L = 1, #Thickness do
+        print('starting loop' .. tostring(L))
+        
+        if HaltBuild then return end
+        
+        local offset = Thickness[L]
+        hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, offset)
+        
+        task.wait(.5)
+        
+        for i = 1, Length do
+            requestRm:FireServer(BuildItem, hrp.CFrame * CFrame.new(0,0,-5))
+            hrp.CFrame = hrp.CFrame * CFrame.new(Inset,0,0)
+            task.wait(.5)
+        end
+    
+        if Inset < 0 then
+            Inset = math.abs(inset)
+        else
+            Inset = -Inset
+        end
+        
+        print(Inset)
+    end
+end
+
+local function quickBuild()
+    if not QuickBuild then return end
+    if mouse.Target.Parent:FindFirstChild('ConstructCentre') == nil then return print('No Centre') end
+    
+    constructRm:FireServer(mouse.Target.Parent:FindFirstChild('ConstructCentre'), player.Character:FindFirstChild(switchTool('e', true)).Handle.Position, player.Character:FindFirstChild(switchTool('e', true)), 'ConstructMelee', -1)
+    task.wait()
+end
+
+local function autoBuild()
+    if AutoBuildConnection ~= nil then return end
+    print('establishing autobuild connection')
+    AutoBuildConnection = game:GetService("Workspace").GarbageCollection.ChildAdded:Connect(function(child)
+        task.wait(1)
+        if child:FindFirstChild('ConstructCentre') == nil then return end
+        
+        for i = 1, 20 do
+            constructRm:FireServer(child['ConstructCentre'], SwitchToolGlobal('e', true).Handle.Position, SwitchToolGlobal('e', true), 'ConstructMelee', -1)
+            task.wait()
+        end
+    end)
+end
+
+local function buildBarricadeBox()
+    local length = tonumber(getgenv().Length)
+    print(length)
+    switchTool('Hammer')
+    local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+    local inset  = 5.7 
+    local builditem = 'Barricade'
+    
+    
+    Thickness = {
+        [1] = 0,
+        [2] = 0,
+        [3] = 0,
+        [4] = 0
+    }
+    
+    print(#Thickness)
+    
+    for L = 1, #Thickness do
+        print('starting loop ' .. tostring(L))
+        
+        if HaltBuild then return end
+        
+        --hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 0)
+        
+        task.wait(.5)
+        
+        for i = 1, length do
+            print('starting LENGTH loop ' .. i)
+            print(i, length)
+            requestRm:FireServer(builditem, game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-5))
+            if i == length then
+                print('I IS EQUAL TO LENGTH')
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(-48), 0)
+                task.wait(.3)
+                requestRm:FireServer(builditem, game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-5))
+                task.wait(.5)
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(-48), 0)
+                task.wait(.3)
+                requestRm:FireServer(builditem, game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-5))
+                task.wait(.3)
+            end
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(inset,0,0)
+            task.wait(.5)
+        end
+        
+        print(inset)
+    end
+end
+
+local function buildSmallHut()
+    switchTool('Hammer')
+    local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+    local builditem = 'Barricade'
+    
+    
+    Thickness = {
+        [1] = 0,
+    }
+    
+    print(#Thickness)
+    
+    for L = 1, #Thickness do
+        print('starting loop ' .. tostring(L))
+        
+        if HaltBuild then return end
+        
+        --hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 0)
+        
+        task.wait(.5)
+        
+        for i = 1, 8 do
+            if i == 8 then
+                hrp.CFrame *= CFrame.new(0,0,-3)
+                task.wait(.3)
+                requestRm:FireServer(builditem, hrp.CFrame * CFrame.new(0,0,-5))
+                task.wait(.1)
+                hrp.CFrame *= CFrame.new(0,0,3)
+                task.wait(.5)
+                requestRm:FireServer('SmallChevauxDeFrise', hrp.CFrame)
+                continue
+            end
+            requestRm:FireServer(builditem, hrp.CFrame * CFrame.new(0,0,-5))
+            task.wait(.5)
+            hrp.CFrame *= CFrame.Angles(0, math.rad(-47), 0)
+            task.wait(.5)
+        end
+        
+        print(Inset)
+    end
+end
+
+local function buildDirtTower()
+    switchTool('Shovel')
+    local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+    Inset = 0 
+    BuildItem = 'LargeDirt'
+    
+    
+    Thickness = {
+        [1] = 0,
+    }
+    
+    print(#Thickness)
+    
+    for L = 1, #Thickness do
+        print('starting loop ' .. tostring(L))
+        
+        if HaltBuild then return end
+        
+        --hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 0)
+        
+        task.wait(.5)
+        
+        for i = 1, Length do
+            task.wait(.5)
+            requestRm:FireServer(BuildItem, hrp.CFrame * CFrame.new(0,0,-5))
+            task.wait(1.5)
+            requestRm:FireServer(BuildItem, hrp.CFrame * CFrame.new(0,0,-5))
+            task.wait(1.5)
+            hrp.CFrame *= CFrame.new(0, 2, -5)
+            task.wait()
+            hrp.CFrame *= CFrame.Angles(0, math.rad(-90), 0)
+        end
+        
+        print(Inset)
+    end
+end
+
+
+-- [[ FOLDERS ]] --
+
+buildStructFd:Dropdown("Item",buildItemsArray,true,function(item) --true/false, replaces the current title "Dropdown" with the option that t
+    BuildItem = item
+end)
+buildStructFd:Box("Length","number",function(value)
+    getgenv().Length = value
+end)
+buildStructFd:Box("Thickness","number",function(value)
+    Thickness = createThickness(value)
+end)
+buildStructFd:Box("Inset","number",function(value)
+    Inset = value
+end)
+buildStructFd:Box("Plr Offset","number",function(value)
+    Offset = value
+end)
+buildStructFd:Button("Start Build",function()
+    startBuild()
+end)
+buildStructFd:Button("Cancel Build",function()
+    HaltBuild = not HaltBuild
+end)
+
+mainFd:Toggle("Auto Build (All Structures)",function(bool) 
+    AutoBuild = bool
+    if not AutoBuild then
+        AutoBuildConnection:Disconnect()
+        AutoBuildConnection = nil
+    end
+    
+    autoBuild()
+end)
+mainFd:Toggle("Quick Build (Mouse Cursor)",function(bool) 
+    QuickBuild = bool
+    if QuickBuild and QuickBuildConnection == nil then
+        QuickBuildConnection = game:GetService('RunService').Heartbeat:Connect(function()
+            quickBuild()
+        end)
+    end
+    
+    if not QuickBuild then
+        QuickBuildConnection:Disconnect()
+        QuickBuildConnection = nil
+    end
+end)
+
+templatesFd:Button("Build Dirt Tower",function()
+    buildDirtTower()
+end)
+
+templatesFd:Button("Build Barricade Box",function()
+    buildBarricadeBox()
+end)
+
+templatesFd:Button("Build Small Hut",function()
+    buildSmallHut()
+end)
