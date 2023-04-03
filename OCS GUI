@@ -1,0 +1,294 @@
+--GUI LIBRARY IS LINORIA AND MADE BY LINORIA NOT MINE |  https://github.com/violin-suzutsuki/LinoriaLib
+
+--// config 
+
+getgenv().ItemInfo = {}
+getgenv().RareItems = {
+    ['LaunchCodes'] = true,
+    ['Tesla APA'] = true,
+    ['APA'] = true,
+}
+-- // variables
+local player = game.Players.LocalPlayer
+local lootNodes = game:GetService("Workspace").WorkspaceStuff.LootNodes
+
+local virtualUser = game:GetService('VirtualUser')
+local pickupFn = game:GetService("ReplicatedStorage").RemoteEvents.PickUpLoot
+local saveItemFn = game:GetService("ReplicatedStorage").RemoteEvents.SaveFunc
+
+local uis = game:GetService('UserInputService')
+local camera = game.Workspace.CurrentCamera
+
+local gameGroup = 8027732
+local repItems = game.ReplicatedStorage:WaitForChild('ItemTools')
+
+local tbl = {}
+for _, ins in ipairs(repItems:GetChildren()) do
+    table.insert(tbl, ins.Name)
+    ItemInfo[ins.Name] = {}
+end
+table.sort(tbl, function(a,b) return a < b end)
+
+local pickupMax = {}
+
+-- // global env 
+
+if scriptLoaded == nil then
+    
+    getgenv().espObjects = {}
+    espObjects['Items'] = {}
+    
+    getgenv().toggles = {}
+    toggles['Items'] = false
+    toggles['AutoPickup'] = false
+    toggles['FastStore'] = false
+    
+    _G['AutoPickup'] = nil
+end
+
+
+-- // functions 
+
+local function toggleAutoPickup(boolValue)
+    if boolValue == false or toggles['AutoPickup'] == false and _G['AutoPickup'] ~= nil then
+        local s, e = pcall(function()
+            _G['AutoPickup']:Disconnect()
+        end)
+        if e then
+            return
+        end
+        if s then
+            _G['AutoPickup'] = nil
+            print('Disconnected Auto Pick Up')
+        end
+    else
+        _G['AutoPickup'] = game:GetService('RunService').RenderStepped:Connect(function()
+            
+            for _, ins in ipairs(lootNodes:GetChildren()) do
+                if (ins.Position - player.Character.HumanoidRootPart.Position).Magnitude > 10 or #ins:GetChildren() == 0  then continue end 
+                
+                if pickupMax[ins] == nil then
+                    pickupMax[ins] = 1
+                else 
+                    pickupMax[ins] += 1
+                    if pickupMax[ins] > 4 then continue end
+                end
+                
+                pickupFn:InvokeServer(ins:FindFirstChildWhichIsA('Model').Name, ins)
+            end
+        end)
+    end
+end
+
+
+function toArray(dict, check)
+    local t = {}
+    for key, value in pairs(dict) do
+        if check == 'K' then
+            table.insert(t, key)
+        elseif check == 'V' then
+            table.insert(t, value)
+        else
+            table.insert(t, key)
+        end
+    end
+    return t
+end
+
+
+function esp(item, tag)
+    if espObjects[tag][item] ~= nil then return warn('Instance already has a esp object...') end
+    
+    local itemesp = Drawing.new('Text')
+    
+    --if ItemInfo[item.Parent.Name] == nil then
+        --ItemInfo[item.Parent.Name] = {}
+    --end
+    
+    itemesp.Visible = true
+    itemesp.Center = true
+    itemesp.Outline = true
+    itemesp.Font = 1
+    itemesp.Color = ItemInfo[item.Parent.Name]['Color'] or Color3.fromRGB(255,255,255)
+    itemesp.Size = ItemInfo[item.Parent.Name]['Size'] or 18
+    itemesp.Text = item.Parent.Name
+    
+    espObjects[tag][item] = itemesp
+end
+
+-- // signals
+if scriptLoaded == nil then
+    warn('loaded connections')
+    uis.InputBegan:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.V then
+            if not toggles['FastStore'] then return end
+            saveItemFn:InvokeServer(player.Character:FindFirstChildWhichIsA('Tool'))
+        end
+    end)
+    
+    -- esp updater
+    game:GetService('RunService').RenderStepped:Connect(function()
+        for key, tbl in pairs(espObjects) do
+            for instance, espObj in pairs(tbl) do
+                if instance == nil or instance.Parent == nil then
+                    espObj.Visible = false
+                    espObj:Remove()
+                    espObjects[key][instance] = nil
+                    continue
+                end
+                local item_pos, item_onscreen = camera:WorldToViewportPoint(instance.Position)
+                local magnitude = math.floor((instance.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                if item_onscreen and toggles[key] then
+                    espObj.Position = Vector2.new(item_pos.X, item_pos.Y)
+                    espObj.Color = ItemInfo[instance.Parent.Name]['Color'] or Color3.fromRGB(255,255,255)
+                    espObj.Visible = true
+                else
+                    espObj.Visible = false
+                end
+            end
+        end
+    end) 
+    
+    lootNodes.ChildAdded:Connect(function(child)
+        print('Child1 Connection')
+        task.wait(.1)
+        if child:FindFirstChildWhichIsA('Model') then
+            task.wait(.1)
+            pcall(function()
+                esp(child:FindFirstChildWhichIsA('Model').PrimaryPart, 'Items')
+            end)
+        end
+        
+        child.ChildAdded:Connect(function(child2)
+            print('Child2 Connection')
+            if child2:IsA('Model') or table.find(tbl, child2.Name) then
+                esp(child2.PrimaryPart, 'Items')
+            end
+        end)
+    end)
+    
+    for _, instance in ipairs(lootNodes:GetChildren()) do
+        if #instance:GetChildren() == 0 then continue end
+        if instance:FindFirstChildWhichIsA('Model') == nil or instance:FindFirstChildWhichIsA('Model').PrimaryPart == nil then continue end
+        esp(instance:FindFirstChildWhichIsA('Model').PrimaryPart, 'Items')
+    end
+else
+    warn('Already loaded...')
+end
+
+-- // LINORIA UI | https://github.com/violin-suzutsuki/LinoriaLib | NOT BY ME
+
+local repo = 'https://raw.githubusercontent.com/wally-rblx/LinoriaLib/main/'
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+
+local Window = Library:CreateWindow({
+    Title = 'Orange Colored Skies | LeechDiamond483 | discord.gg/CtwBHdf2MV',
+    Center = true, 
+    AutoShow = true,
+})
+
+local Tabs = {
+    Main = Window:AddTab('Main'), 
+    EspSettings = Window:AddTab('ESP Settings'),
+    ['UI Settings'] = Window:AddTab('UI Settings'),
+}
+
+local LeftGroupBox = Tabs.Main:AddLeftGroupbox('ESP')
+local mainGroupBox2 = Tabs.Main:AddLeftGroupbox('Client')
+
+local espGroupBox = Tabs.EspSettings:AddLeftGroupbox('Esp Settings')
+
+LeftGroupBox:AddToggle('ItemEsp', {
+    Text = 'Item Esp',
+    Default = false, 
+    Tooltip = 'Activate item esp',
+})
+
+mainGroupBox2:AddToggle('AutoPickUpItems', {
+    Text = 'Auto Pick Up Items',
+    Default = false, 
+    Tooltip = 'When within a certain amount of studs automatically pick up items.',
+})
+
+mainGroupBox2:AddToggle('FastStore', {
+    Text = 'Fast Store',
+    Default = false, 
+    Tooltip = 'When you press V, the items will instantly store in your backpack.',
+})
+
+espGroupBox:AddDropdown('MyMultiDropdown', {
+    -- Default is the numeric index (e.g. "This" would be 1 since it if first in the values list)
+    -- Default also accepts a string as well
+
+    -- Currently you can not set multiple values with a dropdown
+    Values = tbl,
+    Default = toArray(RareItems, 'K'),
+    Multi = true, -- true / false, allows multiple choices to be selected
+
+    Text = 'Rare Items',
+    Tooltip = 'Select rare items to take effect', -- Information shown when you hover over the dropdown
+
+    Callback = function(Value)
+        RareItems = Value
+        for itemName, boolValue in pairs(RareItems) do
+            if ItemInfo[itemName] ~= nil then
+                ItemInfo[itemName]['Color'] = Options.RareItemColor.Value
+            end
+        end
+    end
+})
+
+espGroupBox:AddLabel('Rare Items Color'):AddColorPicker('RareItemColor', {
+    Default = Color3.new(0, 1, 0), -- Bright green
+    Title = 'Rare Item Color', -- Optional. Allows you to have a custom color picker title (when you open it)
+    Transparency = 0, -- Optional. Enables transparency changing for this color picker (leave as nil to disable)
+
+    Callback = function(Value)
+        for itemName, boolValue in pairs(RareItems) do
+            if ItemInfo[itemName] ~= nil then
+                ItemInfo[itemName]['Color'] = Value
+            end
+        end
+    end
+})
+
+Toggles.ItemEsp:OnChanged(function()
+    toggles['Items'] = Toggles.ItemEsp.Value
+end)
+
+Toggles.AutoPickUpItems:OnChanged(function()
+    toggles['AutoPickup'] = Toggles.AutoPickUpItems.Value
+    toggleAutoPickup(toggles['AutoPickup'])
+end)
+
+Toggles.FastStore:OnChanged(function()
+    toggles['FastStore'] = Toggles.FastStore.Value
+end)
+
+
+
+-- // Library functions
+
+Library:OnUnload(function()
+    print('Unloaded!')
+    Library.Unloaded = true
+end)
+
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+MenuGroup:AddButton('Unload', function() Library:Unload() end)
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'End', NoUI = true, Text = 'Menu keybind' }) 
+
+--Library.ToggleKeybind = Options.MenuKeybind
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings() 
+SaveManager:SetIgnoreIndexes({ 'MenuKeybind' }) 
+ThemeManager:SetFolder('MyScriptHub')
+SaveManager:SetFolder('MyScriptHub/specific-game')
+SaveManager:BuildConfigSection(Tabs['UI Settings']) 
+ThemeManager:ApplyToTab(Tabs['UI Settings'])
+
+getgenv().scriptLoaded = true
