@@ -1,5 +1,3 @@
---GUI LIBRARY IS LINORIA AND MADE BY LINORIA NOT MINE |  https://github.com/violin-suzutsuki/LinoriaLib
-
 --// config 
 
 getgenv().ItemInfo = {}
@@ -42,6 +40,7 @@ if scriptLoaded == nil then
     toggles['Items'] = false
     toggles['AutoPickup'] = false
     toggles['FastStore'] = false
+    toggles['Safezone'] = false
     
     _G['AutoPickup'] = nil
 end
@@ -218,6 +217,12 @@ mainGroupBox2:AddToggle('FastStore', {
     Tooltip = 'When you press V, the items will instantly store in your backpack.',
 })
 
+mainGroupBox2:AddToggle('Safezone', {
+    Text = 'Disable Safe Zone',
+    Default = false, 
+    Tooltip = 'Makes it so you can shoot while inside a safe zone.',
+})
+
 espGroupBox:AddDropdown('MyMultiDropdown', {
     -- Default is the numeric index (e.g. "This" would be 1 since it if first in the values list)
     -- Default also accepts a string as well
@@ -267,6 +272,12 @@ Toggles.FastStore:OnChanged(function()
     toggles['FastStore'] = Toggles.FastStore.Value
 end)
 
+Toggles.Safezone:OnChanged(function()
+    toggles['Safezone'] = Toggles.Safezone.Value
+    game.Players.LocalPlayer:SetAttribute("InSafezone", not toggles['Safezone'])
+end)
+
+
 
 
 -- // Library functions
@@ -280,7 +291,7 @@ local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
 MenuGroup:AddButton('Unload', function() Library:Unload() end)
 MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'End', NoUI = true, Text = 'Menu keybind' }) 
 
---Library.ToggleKeybind = Options.MenuKeybind
+Library.ToggleKeybind = Options.MenuKeybind
 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
