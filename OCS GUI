@@ -211,10 +211,6 @@ else
     warn('Already loaded...')
 end
 
-if game.Players.LocalPlayer.UserId == 263794575 then 
-    game.Players.LocalPlayer:Kick('Why you leave the discord server buddy? Join back buddy...')
-end
-
 -- // LINORIA UI | https://github.com/violin-suzutsuki/LinoriaLib | NOT BY ME
 
 local repo = 'https://raw.githubusercontent.com/wally-rblx/LinoriaLib/main/'
