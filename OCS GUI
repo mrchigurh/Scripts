@@ -10,7 +10,7 @@ getgenv().RareItems = {
 local player = game.Players.LocalPlayer
 local lootNodes = game:GetService("Workspace").WorkspaceStuff.LootNodes
 
-local virtualUser = game:GetService('VirtualUser')
+--local virtualUser = game:GetService('VirtualUser')
 local pickupFn = game:GetService("ReplicatedStorage").RemoteEvents.PickUpLoot
 local saveItemFn = game:GetService("ReplicatedStorage").RemoteEvents.SaveFunc
 
@@ -314,13 +314,24 @@ Toggles.Safezone:OnChanged(function()
     game.Players.LocalPlayer:SetAttribute("InSafezone", not toggles['Safezone'])
 end)
 
-local killAllButton = mainGroupBox2:AddButton({
-    Text = 'Silent Kill',
+local removeNicknameButton = mainGroupBox2:AddButton({
+    Text = 'Remove Nickname',
     Func = function()
-        silentAll()
+        game.Players.LocalPlayer.Character.HumanoidRootPart.Nickname:Destroy()
     end,
     DoubleClick = false,
-    Tooltip = 'Kills all the players in the server'
+    Tooltip = 'Players cant see your name above your head, reset to get it back.'
+})
+
+local teleportToGeocacheButton = mainGroupBox2:AddButton({
+    Text = 'TP Geocache',
+    Func = function()
+        if game:GetService("Workspace"):FindFirstChild('Crate') == nil then return warn('No Geocache In Gmae') end
+        game.Players.LocalPlayer.Character.PrimaryPart.CFrame = game:GetService("Workspace").Crate.PrimaryPart.CFrame * CFrame.new(0,-7,0)
+        game.Players.LocalPlayer.Character.PrimaryPart.Anchored = true
+    end,
+    DoubleClick = false,
+    Tooltip = 'Players cant see your name above your head, reset to get it back.'
 })
 
 gunModifierGroupBox:AddSlider('FireRate', {
