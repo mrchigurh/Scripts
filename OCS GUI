@@ -79,6 +79,42 @@ local function toggleAutoPickup(boolValue)
     end
 end
 
+local function meleeKillAll()
+    for _, plr in ipairs(game.Players:GetPlayers()) do
+    if plr.Name == game.Players.LocalPlayer.Name then continue end
+    if plr.Character == nil then continue end
+    if plr.Character.PrimaryPart == nil then continue end
+    if plr:GetAttribute('InSafezone') == true then continue end
+    
+    local oldpos = player.Character.PrimaryPart.CFrame
+    player.Character.PrimaryPart.Anchored = true
+    player.Character.PrimaryPart.CFrame = plr.Character.PrimaryPart.CFrame * CFrame.new(0,-5,0)
+    for i = 1,15 do
+        swingMelee:FireServer('Fire Axe', {plr.Character.Head, plr.Character.PrimaryPart})
+        task.wait()
+    end
+    
+    wait(1)
+    player.Character.PrimaryPart.CFrame = oldpos
+    player.Character.PrimaryPart.Anchored = false
+end
+end
+
+local function silentAll()
+for _, plr in ipairs(game.Players:GetPlayers()) do
+        if plr.Name == game.Players.LocalPlayer.Name then continue end
+        if plr.Character == nil then continue end
+        if plr.Character.PrimaryPart == nil then continue end
+        if plr:GetAttribute('InSafezone') == true then continue end
+        if plr.Character.Humanoid.Seated == true then continue end
+        print(plr.Character.Humanoid.Seated)
+        plr.Character.Head.Anchored = true
+        plr.Character.Head.CFrame = player.Character.Head.CFrame * CFrame.new(0,0,-10)
+        plr.Character.Head.Size = Vector3.new(20,20,20)
+        plr.Character.Head.Transparency = 1
+    end
+end
+
 
 function toArray(dict, check)
     local t = {}
@@ -175,6 +211,10 @@ else
     warn('Already loaded...')
 end
 
+if game.Players.LocalPlayer.UserId == 263794575 then 
+    game.Players.LocalPlayer:Kick('Why you leave the discord server buddy? Join back buddy...')
+end
+
 -- // LINORIA UI | https://github.com/violin-suzutsuki/LinoriaLib | NOT BY ME
 
 local repo = 'https://raw.githubusercontent.com/wally-rblx/LinoriaLib/main/'
@@ -196,6 +236,7 @@ local Tabs = {
 
 local LeftGroupBox = Tabs.Main:AddLeftGroupbox('ESP')
 local mainGroupBox2 = Tabs.Main:AddLeftGroupbox('Client')
+local gunModifierGroupBox = Tabs.Main:AddRightGroupbox('Gun Mods')
 
 local espGroupBox = Tabs.EspSettings:AddLeftGroupbox('Esp Settings')
 
@@ -276,6 +317,89 @@ Toggles.Safezone:OnChanged(function()
     toggles['Safezone'] = Toggles.Safezone.Value
     game.Players.LocalPlayer:SetAttribute("InSafezone", not toggles['Safezone'])
 end)
+
+local killAllButton = mainGroupBox2:AddButton({
+    Text = 'Silent Kill',
+    Func = function()
+        silentAll()
+    end,
+    DoubleClick = false,
+    Tooltip = 'Kills all the players in the server'
+})
+
+gunModifierGroupBox:AddSlider('FireRate', {
+    Text = 'Firerate',
+    Default = 0,
+    Min = 1,
+    Max = 20,
+    Rounding = 1,
+    Compact = false,
+
+    Callback = function(Value)
+        local gunConfig = require(player.Character:FindFirstChildWhichIsA('Tool').Config)
+        gunConfig['Firerate'] = gunConfig['Firerate'] * Value
+    end
+})
+
+gunModifierGroupBox:AddSlider('Bulletspread', {
+    Text = 'Bulletspread',
+    Default = 0,
+    Min = 0,
+    Max = 10,
+    Rounding = 1,
+    Compact = false,
+
+    Callback = function(Value)
+        local gunConfig = require(player.Character:FindFirstChildWhichIsA('Tool').Config)
+        gunConfig['Bulletspread'] = Value
+    end
+})
+
+gunModifierGroupBox:AddSlider('Reloadspeed', {
+    Text = 'Reload Speed',
+    Default = .01,
+    Min = 0,
+    Max = 5,
+    Rounding = 1,
+    Compact = false,
+
+    Callback = function(Value)
+        local gunConfig = require(player.Character:FindFirstChildWhichIsA('Tool').Config)
+        gunConfig['ReloadSpeed'] = Value
+    end
+})
+
+gunModifierGroupBox:AddSlider('Recoil', {
+    Text = 'Recoil',
+    Default = 1,
+    Min = 0,
+    Max = 5,
+    Rounding = 1,
+    Compact = false,
+
+    Callback = function(Value)
+        local gunConfig = require(player.Character:FindFirstChildWhichIsA('Tool').Config)
+        gunConfig['Recoil'] = {Value, Value, Value, Value}
+    end
+})
+
+gunModifierGroupBox:AddSlider('GunSoundVolume', {
+    Text = 'Gun Sound Volume',
+    Default = .1,
+    Min = 0,
+    Max = 10,
+    Rounding = 1,
+    Compact = false,
+
+    Callback = function(Value)
+        local gunConfig = require(player.Character:FindFirstChildWhichIsA('Tool').Config)
+        gunConfig['FireSoundVolume'] = Value
+        gunConfig['FireSound'] = 0
+        gunConfig['HitSound'] = 0
+        gunConfig['ReloadSoundVolume'] = Value
+    end
+})
+
 
 
 
