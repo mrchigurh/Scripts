@@ -62,6 +62,7 @@ if scriptLoaded == nil then
 end
 
 local miscConnections = {}
+local defaultHeadSize = Vector3.new()
 
 -- // functions 
 
@@ -570,6 +571,24 @@ gunModifierGroupBox:AddSlider('GunSoundVolume', {
         gunConfig['FireSound'] = 0
         gunConfig['HitSound'] = 0
         gunConfig['ReloadSoundVolume'] = Value
+    end
+})
+
+gunModifierGroupBox:AddSlider('Head Hitboxes', {
+    Text = 'Head Hitbox Expander',
+    Default = 1,
+    Min = 1,
+    Max = 30,
+    Rounding = 1,
+    Compact = false,
+
+    Callback = function(Value)
+        for _, plr in ipairs(game.Players:GetPlayers()) do 
+            if plr.Name == player.Name then continue end
+            if not plr.Character then continue end
+            if not plr.Character:FindFirstChild('Head') then continue end
+            plr.Character.Head.Size = player.Character.Head.Size * Value
+        end
     end
 })
 
