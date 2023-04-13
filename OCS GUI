@@ -6,11 +6,15 @@ getgenv().RareItems = {
     ['Tesla APA'] = true,
     ['APA'] = true,
 }
+getgenv().AF_BlackListedItems = {}
+getgenv().AF_AutoStoreItems = {}
+
 -- // variables
+local TweenService = game:GetService('TweenService')
+
 local player = game.Players.LocalPlayer
 local lootNodes = game:GetService("Workspace").WorkspaceStuff.LootNodes
 
---local virtualUser = game:GetService('VirtualUser')
 local pickupFn = game:GetService("ReplicatedStorage").RemoteEvents.PickUpLoot
 local saveItemFn = game:GetService("ReplicatedStorage").RemoteEvents.SaveFunc
 
@@ -20,6 +24,9 @@ local camera = game.Workspace.CurrentCamera
 local gameGroup = 8027732
 local repItems = game.ReplicatedStorage:WaitForChild('ItemTools')
 
+local swingMelee = game:GetService('ReplicatedStorage').RemoteEvents.SwingMelee
+
+
 local tbl = {}
 for _, ins in ipairs(repItems:GetChildren()) do
     table.insert(tbl, ins.Name)
@@ -28,6 +35,13 @@ end
 table.sort(tbl, function(a,b) return a < b end)
 
 local pickupMax = {}
+local teleportLocations = {
+    [1] =CFrame.new(428.0681457519531, 407.63580322265625, 748),
+    [2] = CFrame.new(-749.1795654296875, 380.125244140625, 845.8096923828125),
+    [3] = CFrame.new(84.73257446289062, 465.4793701171875, -624.1764526367188),
+    [4] = CFrame.new(-1211.81591796875, 302.73065185546875, -2568.527099609375),
+    [5] = CFrame.new(-3414.690673828125, 576.6998901367188, -3201.881591796875),
+}
 
 -- // global env 
 
@@ -41,12 +55,134 @@ if scriptLoaded == nil then
     toggles['AutoPickup'] = false
     toggles['FastStore'] = false
     toggles['Safezone'] = false
+    toggles['Autofarm'] = false
+    toggles['KillAura'] = false
     
     _G['AutoPickup'] = nil
 end
 
+local miscConnections = {}
 
 -- // functions 
+
+local function destroyStructures()
+    
+end
+
+
+local function tweenParts(part1, part2)
+    local tweenInfo = TweenInfo.new(.1)
+    local tween = TweenService:Create(part1, tweenInfo, { CFrame = part2.CFrame * CFrame.new(0,-10,0) })
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+
+local function fireproximityprompt(Obj, Amount, Skip)
+    if Obj.ClassName == "ProximityPrompt" then 
+        Amount = Amount or 1
+        local PromptTime = Obj.HoldDuration
+        if Skip then 
+            Obj.HoldDuration = 0
+        end
+        for i = 1, Amount do 
+            Obj:InputHoldBegin()
+            if not Skip then 
+                wait(Obj.HoldDuration)
+            end
+            Obj:InputHoldEnd()
+        end
+        Obj.HoldDuration = PromptTime
+    else 
+        error("userdata<ProximityPrompt> expected")
+    end
+end
+
+local function getSellPrompt()
+    for _, ins in ipairs(game:GetService("Workspace").WorkspaceStuff.ResourceProcessing:GetChildren()) do
+        if ins:FindFirstChild('Screen') then
+            return ins.Screen.Prompt
+        end
+    end
+end
+
+local function toggleAutoFarm()
+    if toggles['Autofarm'] then
+        
+        for i,cframePos in pairs(teleportLocations) do
+             if #lootNodes:GetChildren() == 0 then continue end
+            player.Character.PrimaryPart.CFrame = cframePos
+            player.Character.PrimaryPart.Anchored = true
+            local lootNodes = lootNodes:GetChildren()
+           table.sort(lootNodes, function(a,b) return (a.Position - player.Character.PrimaryPart.Position).Magnitude < (b.Position - player.Character.PrimaryPart.Position).Magnitude end)
+           
+            
+            
+            for _, nodeInstance in ipairs(lootNodes) do
+                local currentDis = (nodeInstance.Position - player.Character.PrimaryPart.Position).Magnitude
+                
+                if #player.Backpack:GetChildren() >= 7 then
+                    player.Character.PrimaryPart.Anchored = true
+                    --yield until all items are sold to a npc.
+                    player.Character.PrimaryPart.CFrame = CFrame.new(565,412, 909)
+                    task.wait(.2)
+                    player.Character.PrimaryPart.Anchored = false
+                    --do auto sell shit
+                    for _, tool in ipairs(player.Backpack:GetChildren()) do
+                        tool.Parent = player.Character
+                        task.wait(.1)
+                        
+                        fireproximityprompt(getSellPrompt(), 1, false)
+                        repeat fireproximityprompt(getSellPrompt(), 1, false) ; task.wait(1)until tool.Parent == nil or tool == nil or player.Character:FindFirstChildWhichIsA('Tool') == nil
+                    end
+                end
+                
+                if #nodeInstance:GetChildren() == 0 then continue end
+                if nodeInstance:FindFirstChildWhichIsA('Model') == nil or nodeInstance:FindFirstChildWhichIsA('Model').PrimaryPart == nil then continue end
+                if AF_BlackListedItems[nodeInstance:FindFirstChildWhichIsA('Model').Name] then print(nodeInstance:FindFirstChildWhichIsA('Model').Name .. ' blacklisted...') ; continue end
+                player.Character.PrimaryPart.Anchored = true
+                player.Character.PrimaryPart.CFrame *= CFrame.new(0,-10,0)
+                tweenParts(player.Character.PrimaryPart, nodeInstance)
+               --layer.Character.PrimaryPart.CFrame = nodeInstance.CFrame * CFrame.new(0,2,0)
+                local itemName = nodeInstance:FindFirstChildWhichIsA('Model').Name
+                
+                if AF_AutoStoreItems[nodeInstance:FindFirstChildWhichIsA('Model').Name] then
+                    pickupFn:InvokeServer(itemName, nodeInstance)
+                    task.wait(2)
+                    player.Backpack:FindFirstChild(itemName).Parent = player.Character
+                    saveItemFn:InvokeServer(player.Character:FindFirstChildWhichIsA('Tool'))
+                    continue
+                end
+                
+                print(itemName, nodeInstance.Name)
+                if currentDis > 50 then 
+                    task.wait(5)
+                elseif currentDis < 10 then
+                    task.wait(.5)
+                else
+                    task.wait(2.75)
+                end
+                
+                player.Character.PrimaryPart.CFrame = nodeInstance.CFrame * CFrame.new(0,2,0)
+                player.Character.PrimaryPart.Anchored = false
+
+                for i = 1,2 do
+                pickupFn:InvokeServer(itemName, nodeInstance)
+                task.wait()
+                end
+                
+                task.wait(.1)
+                if not toggles['Autofarm'] then return end
+            end
+            
+            task.wait(7) --wait for stuff to load in 
+        end
+
+    else
+        player.Character.PrimaryPart.Anchored = false
+    end
+end
+
 
 local function toggleAutoPickup(boolValue)
     if boolValue == false or toggles['AutoPickup'] == false and _G['AutoPickup'] ~= nil then
@@ -81,23 +217,22 @@ end
 
 local function meleeKillAll()
     for _, plr in ipairs(game.Players:GetPlayers()) do
-    if plr.Name == game.Players.LocalPlayer.Name then continue end
-    if plr.Character == nil then continue end
-    if plr.Character.PrimaryPart == nil then continue end
-    if plr:GetAttribute('InSafezone') == true then continue end
-    
-    local oldpos = player.Character.PrimaryPart.CFrame
-    player.Character.PrimaryPart.Anchored = true
-    player.Character.PrimaryPart.CFrame = plr.Character.PrimaryPart.CFrame * CFrame.new(0,-5,0)
-    for i = 1,15 do
-        swingMelee:FireServer('Fire Axe', {plr.Character.Head, plr.Character.PrimaryPart})
-        task.wait()
+        if plr.Name == game.Players.LocalPlayer.Name then continue end
+        if plr.Character == nil then continue end
+        if plr.Character.PrimaryPart == nil then continue end
+        if plr:GetAttribute('InSafezone') == true then continue end
+        if (player.Character.PrimaryPart.Position - plr.Character.PrimaryPart.Position).Magnitude > 80 then continue end
+        if player.Character.Humanoid.Health == 0 or player.Character.Humanoid:GetState() == Enum.HumanoidStateType.Dead then continue end
+        
+        task.spawn(function()
+            for i = 1,15 do
+                pcall(function()
+                swingMelee:FireServer(player.Character:FindFirstChildWhichIsA('Tool').Name, {plr.Character.Head, plr.Character.PrimaryPart})
+                end)
+                task.wait()
+            end
+        end)
     end
-    
-    wait(1)
-    player.Character.PrimaryPart.CFrame = oldpos
-    player.Character.PrimaryPart.Anchored = false
-end
 end
 
 local function silentAll()
@@ -115,7 +250,6 @@ for _, plr in ipairs(game.Players:GetPlayers()) do
     end
 end
 
-
 function toArray(dict, check)
     local t = {}
     for key, value in pairs(dict) do
@@ -129,7 +263,6 @@ function toArray(dict, check)
     end
     return t
 end
-
 
 function esp(item, tag)
     if espObjects[tag][item] ~= nil then return warn('Instance already has a esp object...') end
@@ -154,6 +287,14 @@ end
 -- // signals
 if scriptLoaded == nil then
     warn('loaded connections')
+    task.spawn(function()
+        while task.wait(.1) do
+            if not toggles['KillAura'] then continue end
+            
+            meleeKillAll()
+        end
+    end)
+        
     uis.InputBegan:Connect(function(input)
         if input.KeyCode == Enum.KeyCode.V then
             if not toggles['FastStore'] then return end
@@ -185,7 +326,6 @@ if scriptLoaded == nil then
     end) 
     
     lootNodes.ChildAdded:Connect(function(child)
-        print('Child1 Connection')
         task.wait(.1)
         if child:FindFirstChildWhichIsA('Model') then
             task.wait(.1)
@@ -194,8 +334,12 @@ if scriptLoaded == nil then
             end)
         end
         
-        child.ChildAdded:Connect(function(child2)
-            print('Child2 Connection')
+        if miscConnections[child] then
+            miscConnections[child]:Disconnect()
+            miscConnections[child] = nil
+        end
+    
+        miscConnections[child] = child.ChildAdded:Connect(function(child2)
             if child2:IsA('Model') or table.find(tbl, child2.Name) then
                 esp(child2.PrimaryPart, 'Items')
             end
@@ -232,9 +376,15 @@ local Tabs = {
 
 local LeftGroupBox = Tabs.Main:AddLeftGroupbox('ESP')
 local mainGroupBox2 = Tabs.Main:AddLeftGroupbox('Client')
+local AutofarmGroupBox = Tabs.Main:AddLeftGroupbox('Autofarm')
 local gunModifierGroupBox = Tabs.Main:AddRightGroupbox('Gun Mods')
-
 local espGroupBox = Tabs.EspSettings:AddLeftGroupbox('Esp Settings')
+
+AutofarmGroupBox:AddToggle('Autofarm', {
+    Text = 'Enable Auto Farm',
+    Default = false, 
+    Tooltip = 'Farm items and sell them to a vendor NPC',
+})
 
 LeftGroupBox:AddToggle('ItemEsp', {
     Text = 'Item Esp',
@@ -247,6 +397,13 @@ mainGroupBox2:AddToggle('AutoPickUpItems', {
     Default = false, 
     Tooltip = 'When within a certain amount of studs automatically pick up items.',
 })
+
+mainGroupBox2:AddToggle('KillAura', {
+    Text = 'Melee Kill Aura',
+    Default = false, 
+    Tooltip = 'Equip a melee weapon, preferably the axe and kill people around u'
+})
+
 
 mainGroupBox2:AddToggle('FastStore', {
     Text = 'Fast Store',
@@ -312,6 +469,15 @@ end)
 Toggles.Safezone:OnChanged(function()
     toggles['Safezone'] = Toggles.Safezone.Value
     game.Players.LocalPlayer:SetAttribute("InSafezone", not toggles['Safezone'])
+end)
+
+Toggles.Autofarm:OnChanged(function()
+    toggles['Autofarm'] = Toggles.Autofarm.Value 
+    toggleAutoFarm()
+end)
+
+Toggles.KillAura:OnChanged(function()
+    toggles['KillAura'] = Toggles.KillAura.Value
 end)
 
 local removeNicknameButton = mainGroupBox2:AddButton({
