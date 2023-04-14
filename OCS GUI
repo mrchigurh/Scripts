@@ -125,7 +125,7 @@ local function toggleAutoFarm()
                 if #player.Backpack:GetChildren() >= 7 then
                     player.Character.PrimaryPart.Anchored = true
                     --yield until all items are sold to a npc.
-                    player.Character.PrimaryPart.CFrame = CFrame.new(565,412, 909)
+                    player.Character.PrimaryPart.CFrame = CFrame.new(1315.89771, 341.226837, -816.980835)
                     task.wait(.2)
                     player.Character.PrimaryPart.Anchored = false
                     --do auto sell shit
